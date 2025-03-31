@@ -389,7 +389,7 @@ fun RecommendedSection(fruits: List<Fruit>) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Recomendados para você",
                 style = MaterialTheme.typography.h6,
-                color = CORES.COLOR.GREENLIGHT)
+                color = CORES.COLOR.GREEN)
             Spacer(Modifier.weight(1f))
             TextButton(onClick = {}) {
                 Text("Ver mais", color = Color.Green)

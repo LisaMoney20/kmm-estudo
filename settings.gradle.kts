@@ -12,6 +12,7 @@ pluginManagement {
         }
         mavenCentral()
         gradlePluginPortal()
+
     }
 }
 
@@ -25,7 +26,7 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+
     }
 }
-
 include(":composeApp")

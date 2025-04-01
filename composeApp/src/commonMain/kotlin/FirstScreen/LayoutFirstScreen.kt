@@ -3,10 +3,12 @@
 package FirstScreen
 
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -56,12 +58,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.key.Key.Companion.R
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.selects.select
-
+import coil3.compose.AsyncImage
+import firstprojecttest.composeapp.generated.resources.Res
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 
 //Tela principal
@@ -422,6 +429,18 @@ fun FruitCard(fruit: Fruit ) {
     ) //Cada fruta é exibida dentro de um Cartão
     {
         Column(modifier = Modifier.padding(8.dp)){
+//            AsyncImage(
+//                model = "https://ibb.co/Kx9Z22nj",
+//                contentDescription = "Fruit.name"
+ //           )
+//            Image(
+//                painter = painterResource(id = R.drawable.kiwi),
+//                contentDescription = fruit.name,
+//                contentScale = ContentScale.Crop,
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(100.dp)
+//            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -430,27 +449,39 @@ fun FruitCard(fruit: Fruit ) {
             )
             Spacer(Modifier.height(8.dp))
             // Text(fruit.name, FontWeight = FontWeight.Bold) //Negrito
-            Text("Em estoque", color = CORES.COLOR.DARKGREEN)
-            Text(fruit.name)
-            Text(fruit.price)
+            Text("Em estoque",
+                color = CORES.COLOR.DARKGREEN)
+            Text(fruit.price,
+                style = MaterialTheme.typography.body2,
+                fontWeight =  FontWeight.Bold)
+            Text(fruit.name,
+                style = MaterialTheme.typography.subtitle2,
+                fontWeight = FontWeight.Bold,
+                color = CORES.COLOR.GREEN )
+
         }
+
     }
 }
+
+
+
 
 //Define o modelo de dados para representar uma fruta
 data class Fruit(
     val name: String,
-    val price: String
+    val price: String,
+    //val imageRes: String
 )
 //Lista fixa de frutas
 fun getFruits(): List<Fruit> =listOf(
     Fruit("Kiwi", "R$7.50/1kg"),
-    Fruit("Laranja", "R$9.99/1kg"),
-    Fruit("Manga", "R$5.20/1kg"),
-    Fruit("Morango", "R$12.00/1kg"),
-    Fruit("Graviola", "R$10.00/1kg"),
-    Fruit("Cupuaçu", "R$5.00/1kg"),
-    Fruit("Açai", "R$50.00/1kg")
+//    Fruit("Laranja", "R$9.99/1kg","laranja"),
+//    Fruit("Manga", "R$5.20/1kg","manga"),
+//    Fruit("Morango", "R$12.00/1kg","morango"),
+//    Fruit("Graviola", "R$10.00/1kg","graviola"),
+//    Fruit("Cupuaçu", "R$5.00/1kg","cupuacu"),
+//    Fruit("Açai", "R$50.00/1kg","acai")
 )
 
 

@@ -3,33 +3,21 @@
 package FirstScreen
 
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.paddingFromBaseline
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Card
 import androidx.compose.material.ChipDefaults.filterChipColors
-import androidx.compose.material.DrawerDefaults.backgroundColor
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.ExperimentalMaterialApi
@@ -44,39 +32,43 @@ import androidx.compose.material.TextButton
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Person2
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.input.key.Key.Companion.R
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import firstprojecttest.composeapp.generated.resources.Res
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
+import kotlinx.coroutines.launch
 
 
 //Tela principal
 @Composable
 fun TesteApp(){
-    var selectedCategory by remember { mutableStateOf("Cítricas") }// Estado local para a categoria selecionada *adicionei .toString()
-    val fruits = remember {getFruits() } //Estado para armazenar a lista de frutas disponíveis
+    var selectedCategory by remember { mutableStateOf("") }// Estado local para a categoria selecionada
+    var products by remember { mutableStateOf(emptyList<ProductModel>()) }
+    var categories by remember { mutableStateOf(emptyList<String>()) }
+    val productController = remember { ProductController() }
+    val coroutineScope = rememberCoroutineScope()
 
+
+    //carrega os dados ao iniciar
+    LaunchedEffect (Unit){//  Executa um bloco de código assíncrono quando o composable é iniciado
+        coroutineScope.launch { //Executa código assíncrono sem travar a interface
+            products = productController.fetchProducts() //A UI será automaticamente atualizada, pois products é um mutableStateOf
+            categories = productController.getCategories(products)
+            selectedCategory = categories.firstOrNull()?:"" // Retorna o primeiro item da lista, ou null se a lista estiver vazia.
+        }
+    }
 
 //Define o tema do Material Design
     MaterialTheme {
@@ -85,7 +77,7 @@ fun TesteApp(){
             backgroundColor = CORES.COLOR.DARKGREEN,
             topBar = {
                 TopAppBar(
-                    title = { Text("APP Fruta")},
+                    title = { Text("Produtos APP")},
                     backgroundColor = CORES.COLOR.YELLOW,
                 )
             }
@@ -98,22 +90,37 @@ fun TesteApp(){
                     .verticalScroll(rememberScrollState())
 
             ) {
+
+            }
                 GreetingSection(name = "Money")
 
-                SearchBar() //Renderiza um campo de busca onde o usuário pode digitar
+                SearchBar() //barra de pesquisa
+                if (categories.isNotEmpty()){
                 CategorySection( //Categoria atualmente selecionada
-                    categories = listOf("Cítricas",
-                        "Tropical",
-                        "Frutas Vermelhas",
-                        "Exóticas"),
+                    categories = categories,
                     selectedCategory = selectedCategory,
                     onCategorySelected = { selectedCategory = it } //Atualiza o estado da categoria ao clicar em uma opção
-                )
-                RecommendedSection(fruits = fruits) //Exibe frutas recomendadas em uma lista rolável horizontalmente (LazyRow).
+                )}
+               //SEÇÃO DE RECOMENDADOS
+            val filteredProducts = if (selectedCategory.isEmpty()){
+            products
+            } else {
+                products.filter { it.category == selectedCategory }
             }
+            RecommendedSection(products = filteredProducts)
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -130,7 +137,7 @@ fun GreetingSection(name: String) {
         ) {
             Icon(
                 imageVector = Icons.Default.Menu,
-                contentDescription = "Menu suspenso",
+                contentDescription  = "Menu suspenso",
                 tint = CORES.COLOR.GREENLIGHT
             )
         }
@@ -172,55 +179,6 @@ fun GreetingSection(name: String) {
         }
     }
 }
-
-//        IconButton(
-//            onClick = { expanded = true }
-//        ) {
-////            Icon(
-////                imageVector = Icons.Default.Person,
-////                contentDescription = "Perfil",
-////                tint = CORES.COLOR.GREENLIGHT
-////            )
-////           DropdownMenuItem(onClick = {
-////             expanded = false
-////           // Ação para item 1
-////         }) {
-////               Text("Perfil")
-////         }
-
-
-////Seção de Boas-Vindas
-//@Composable
-//fun GreetingSection(name: String) {
-//    Text(
-//        text = "Olá, $name",
-//        style = MaterialTheme.typography.h6,
-//        color = Color.White,
-//
-//        modifier = Modifier
-//            .padding(12.dp) //Usa o MaterialTheme.typography.h5 para estilo
-//
-//
-//    )
-//}
-//icone de perfil
-//@Composable
-//fun Profile() {
-//
-//    Box(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .padding(12.dp)
-//    ) {
-//        // Ícone de perfil alinhado à direita
-//        Icon(
-//            imageVector = Icons.Default.Person,
-//            contentDescription = "Perfil do usuário",
-//            tint = CORES.COLOR.GREENLIGHT,
-//            modifier = Modifier.align(Alignment.CenterEnd)
-//        )
-//    }
-//}
 
 
 
@@ -285,16 +243,16 @@ fun CategorySection(
                         backgroundColor = CORES.COLOR.YELLOWLI, // Cor quando NÃO selecionado
                         selectedBackgroundColor = CORES.COLOR.YELLOW, // Cor quando SELECIONADO
                     ),
-                   modifier = Modifier
+                    modifier = Modifier
                         .weight(1f)
                         .padding(end = 4.dp, bottom = 8.dp)
-                       .width(120.dp) // Defina uma largura adequada
+                        .width(120.dp) // Defina uma largura adequada
                 ) {
                     Text(
                         text = categories[0],
                         textAlign = TextAlign.Center,//centraliza o texto
                         modifier = Modifier.fillMaxWidth() // Ocupa toda a largura disponível
-                        )
+                    )
                 }
 
                 FilterChip(
@@ -312,7 +270,7 @@ fun CategorySection(
                         text = categories[1],
                         textAlign = TextAlign.Center,//centraliza o texto
                         modifier = Modifier.fillMaxWidth() // Ocupa toda a largura disponível
-                 )
+                    )
                 }
             }
 
@@ -355,9 +313,6 @@ fun CategorySection(
                     )
                 }
             }
-        }
-    }
-}
 
 
 
@@ -366,30 +321,7 @@ fun CategorySection(
 
 
 
-
-
-
-    //LazyRow para rolagem horizontal de categorias
-//        LazyRow {
-//            items(categories) { category ->
-//                FilterChip(
-//                    selected = (category == selectedCategory),
-//                    onClick = { onCategorySelected(category) },
-//                    modifier = Modifier.padding(end = 8.dp) ) //FilterChip permite selecionar uma categoria (estilo botão) *em category adicionei .toString()
-//                {
-//                    Text(category)  // Atualiza a categoria selecionada
-//                }
-//            }
-//        }
-
-
-
-
-
-
-
-
-// Seção de Frutas Recomendadas
+            // Seção de Frutas Recomendadas
 @Composable
 fun RecommendedSection(fruits: List<Fruit>) {
     Column(modifier = Modifier.padding(16.dp)) {

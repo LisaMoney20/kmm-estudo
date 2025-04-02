@@ -1,4 +1,0 @@
-package FirstScreen
-
-class TelaPrincipalController {
-}

@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    kotlin("plugin.serialization") version "1.9.0"
+
 }
 
 kotlin {
@@ -48,9 +50,14 @@ kotlin {
             api(compose.materialIconsExtended)
             implementation(libs.coil.compose)
             implementation(libs.coil.network.ktor3)
-
-            implementation(libs.bundles.ktor)
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.ktor.client.core)
+            implementation(libs.kotlinx.coroutines.core)
         }
+
+
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
         }

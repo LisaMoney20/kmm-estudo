@@ -3,9 +3,8 @@
 package FirstScreen
 
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridItemScope
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -47,17 +49,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import http.AppHttpClient
 import kotlinx.coroutines.launch
+import kotlinx.serialization.descriptors.PrimitiveKind
 
 
 //Tela principal
 @Composable
 fun TesteApp(){
+    val httpClient = remember { AppHttpClient.httpClient }
     var selectedCategory by remember { mutableStateOf("") }// Estado local para a categoria selecionada
-    var products by remember { mutableStateOf(emptyList<ProductModel>()) }
+    var products by remember { mutableStateOf<List<ProductModel>>(arrayListOf()) }
     var categories by remember { mutableStateOf(emptyList<String>()) }
-    val productController = remember { ProductController() }
+    val productController = remember { ProductController(httpClient) }
     val coroutineScope = rememberCoroutineScope()
 
 
@@ -90,37 +97,29 @@ fun TesteApp(){
                     .verticalScroll(rememberScrollState())
 
             ) {
-
-            }
                 GreetingSection(name = "Money")
-
                 SearchBar() //barra de pesquisa
                 if (categories.isNotEmpty()){
-                CategorySection( //Categoria atualmente selecionada
-                    categories = categories,
-                    selectedCategory = selectedCategory,
-                    onCategorySelected = { selectedCategory = it } //Atualiza o estado da categoria ao clicar em uma opção
-                )}
-               //SEÇÃO DE RECOMENDADOS
-            val filteredProducts = if (selectedCategory.isEmpty()){
-            products
-            } else {
-                products.filter { it.category == selectedCategory }
+                    CategorySection( //Categoria atualmente selecionada
+                        categories = categories,
+                        selectedCategory = selectedCategory,
+                        onCategorySelected = { selectedCategory = it } //Atualiza o estado da categoria ao clicar em uma opção
+                    )
+                    RecommendedSection(products, selectedCategory)
+                }
+//                    SEÇÃO DE RECOMENDADOS
+
+                if (selectedCategory.isEmpty()){
+
+//                    products
+//                                    println("oi${products.first()}")
+                } else {
+//                    products.filter { it.category == selectedCategory }
+                }
             }
-            RecommendedSection(products = filteredProducts)
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -180,16 +179,11 @@ fun GreetingSection(name: String) {
     }
 }
 
-
-
-
-
-
-
 //Barra de pesquisa
 @Composable
 fun SearchBar() {
     var searchText by remember { mutableStateOf("") } //Armazena o texto digitado pelo usuário
+
     //Campo de entrada com borda
     OutlinedTextField(
         value = searchText,
@@ -223,198 +217,142 @@ fun CategorySection(
     categories: List<String>,
     selectedCategory: String,
     onCategorySelected: (String) -> Unit
-)
-{
-    Column(modifier = Modifier.padding(20.dp)) {
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp)) {
         Text(
-            "Categoria",
+            "Categorias",
             style = MaterialTheme.typography.h6,
-            color = CORES.COLOR.GREENLIGHT
+            color = CORES.COLOR.GREENLIGHT,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
-
-        // Layout em grade 2x2
-        Column(modifier = Modifier.padding(10.dp)) {
-            // Primeira linha (2 chips)
-            Row {
+        // Layout horizontal com scroll para muitas categorias
+        Row(
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .padding(bottom = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            categories.forEach { category ->
                 FilterChip(
-                    selected = (categories[0] == selectedCategory),
-                    onClick = { onCategorySelected(categories[0]) },
+                    selected = (category == selectedCategory),
+                    onClick = { onCategorySelected(category) },
                     colors = filterChipColors(
-                        backgroundColor = CORES.COLOR.YELLOWLI, // Cor quando NÃO selecionado
-                        selectedBackgroundColor = CORES.COLOR.YELLOW, // Cor quando SELECIONADO
+                        backgroundColor = CORES.COLOR.YELLOWLI,
+                        selectedBackgroundColor = CORES.COLOR.YELLOW,
+                        selectedContentColor = Color.Black
                     ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp, bottom = 8.dp)
-                        .width(120.dp) // Defina uma largura adequada
+                    modifier = Modifier.padding(vertical = 8.dp)
                 ) {
                     Text(
-                        text = categories[0],
-                        textAlign = TextAlign.Center,//centraliza o texto
-                        modifier = Modifier.fillMaxWidth() // Ocupa toda a largura disponível
-                    )
-                }
-
-                FilterChip(
-                    selected = (categories[1] == selectedCategory),
-                    onClick = { onCategorySelected(categories[1]) },
-                    colors = filterChipColors(
-                        backgroundColor = CORES.COLOR.YELLOWLI, // Cor quando NÃO selecionado
-                        selectedBackgroundColor = CORES.COLOR.YELLOW, // Cor quando SELECIONADO
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 4.dp, bottom = 8.dp)
-                ) {
-                    Text(
-                        text = categories[1],
-                        textAlign = TextAlign.Center,//centraliza o texto
-                        modifier = Modifier.fillMaxWidth() // Ocupa toda a largura disponível
+                        text = category.replaceFirstChar { it.titlecase() },
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.caption
                     )
                 }
             }
+        }
+    }
+}
 
-            // Segunda linha (2 chips)
-            Row {
-                FilterChip(
-                    selected = (categories[2] == selectedCategory),
-                    onClick = { onCategorySelected(categories[2]) },
-                    colors = filterChipColors(
-                        backgroundColor = CORES.COLOR.YELLOWLI, // Cor quando NÃO selecionado
-                        selectedBackgroundColor = CORES.COLOR.YELLOW, // Cor quando SELECIONADO
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp)
-                ) {
-                    Text(
-                        text = categories[2],
-                        textAlign = TextAlign.Center,//centraliza o texto
-                        modifier = Modifier.fillMaxWidth() // Ocupa toda a largura disponível
-                    )
-                }
-
-                FilterChip(
-                    selected = (categories[3] == selectedCategory),
-                    onClick = { onCategorySelected(categories[3]) },
-                    colors = filterChipColors(
-                        backgroundColor = CORES.COLOR.YELLOWLI, // Cor quando NÃO selecionado
-                        selectedBackgroundColor = CORES.COLOR.YELLOW, // Cor quando SELECIONADO
-                    ),
-
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 4.dp)
-                ) {
-                    Text(
-                        text = categories[3],
-                        textAlign = TextAlign.Center,//centraliza o texto
-                        modifier = Modifier.fillMaxWidth() // Ocupa toda a largura disponível
-                    )
-                }
-            }
-
-
-
-
-
-
-
-
-            // Seção de Frutas Recomendadas
+// Seção de Frutas Recomendadas
 @Composable
-fun RecommendedSection(fruits: List<Fruit>) {
-    Column(modifier = Modifier.padding(16.dp)) {
+fun RecommendedSection(product: List<ProductModel>, selectedCategory : String) {
+    var produtosFiltrados : List<ProductModel> = product.filter {
+        it.category == selectedCategory
+    }
+    println("produtosFiltrados : $produtosFiltrados")
+    Column(modifier = Modifier
+        .padding(horizontal = 16.dp, vertical = 20.dp)
+        .fillMaxWidth()
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Recomendados para você",
+            Text(
+                "Recomendados para você",
                 style = MaterialTheme.typography.h6,
-                color = CORES.COLOR.GREEN)
+                color = CORES.COLOR.GREEN
+            )
+
             Spacer(Modifier.weight(1f))
             TextButton(onClick = {}) {
                 Text("Ver mais", color = Color.Green)
             }
         }
 
-        // Substituição do LazyRow
-        Row(
-            modifier = Modifier
-                .horizontalScroll(rememberScrollState())
+        // grid de produtos
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+           //verticalItemSpacing = 4.dp,
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+            horizontalArrangement = Arrangement.spacedBy(15.dp),
+            modifier = Modifier.height(550.dp)
         ) {
-            fruits.forEach { fruit ->
-                FruitCard(fruit = fruit)
-                Spacer(modifier = Modifier.width(8.dp))
+            items(produtosFiltrados.size) { index -> // Usando 'products' diretamente
+                    ProductCard(product = produtosFiltrados[index])
+                println("Sssss: $index")
             }
+
         }
     }
+
+
+
+
+
+    //Define o modelo de dados para representar uma fruta
+    data class products(
+        val title: String,
+        val price: String,
+        //val imageRes: String
+    )
+
 }
+
+//private fun LazyGridScope.items(function: LazyGridItemScope.(Int) -> Unit) {
+//    val todo = TODO("Not yet implemented")
+//}
 
 //card de frutas
 @Composable
-fun FruitCard(fruit: Fruit ) {
+fun ProductCard(product: ProductModel) {
     Card(
-
         modifier = Modifier
             .width(150.dp)
             .padding(end = 8.dp),
         elevation = 4.dp,
         backgroundColor = CORES.COLOR.YELLOW
-    ) //Cada fruta é exibida dentro de um Cartão
+    )
     {
-        Column(modifier = Modifier.padding(8.dp)){
-//            AsyncImage(
-//                model = "https://ibb.co/Kx9Z22nj",
-//                contentDescription = "Fruit.name"
- //           )
-//            Image(
-//                painter = painterResource(id = R.drawable.kiwi),
-//                contentDescription = fruit.name,
-//                contentScale = ContentScale.Crop,
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(100.dp)
-//            )
-            Box(
+        Column(modifier = Modifier.padding(8.dp)) {
+            AsyncImage(
+                model = product.thumbnail ?: "https://dummyjson.com/products",
+                contentDescription = product.title,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp)
-                    .background(Color.LightGray)
+                    .height(250.dp)
             )
+
             Spacer(Modifier.height(8.dp))
-            // Text(fruit.name, FontWeight = FontWeight.Bold) //Negrito
-            Text("Em estoque",
-                color = CORES.COLOR.DARKGREEN)
-            Text(fruit.price,
+            Text(
+                "Em estoque: ${product.stock}",
+                color = CORES.COLOR.DARKGREEN
+            ) // Cor original
+            Text(
+                "R$${(product.price)}",
                 style = MaterialTheme.typography.body2,
-                fontWeight =  FontWeight.Bold)
-            Text(fruit.name,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                product.title,
                 style = MaterialTheme.typography.subtitle2,
                 fontWeight = FontWeight.Bold,
-                color = CORES.COLOR.GREEN )
-
+                color = CORES.COLOR.GREEN
+            )
         }
-
     }
 }
 
 
 
-
-//Define o modelo de dados para representar uma fruta
-data class Fruit(
-    val name: String,
-    val price: String,
-    //val imageRes: String
-)
-//Lista fixa de frutas
-fun getFruits(): List<Fruit> =listOf(
-    Fruit("Kiwi", "R$7.50/1kg"),
-//    Fruit("Laranja", "R$9.99/1kg","laranja"),
-//    Fruit("Manga", "R$5.20/1kg","manga"),
-//    Fruit("Morango", "R$12.00/1kg","morango"),
-//    Fruit("Graviola", "R$10.00/1kg","graviola"),
-//    Fruit("Cupuaçu", "R$5.00/1kg","cupuacu"),
-//    Fruit("Açai", "R$50.00/1kg","acai")
-)
 
 
 

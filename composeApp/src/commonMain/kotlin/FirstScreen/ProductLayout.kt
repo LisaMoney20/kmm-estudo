@@ -3,6 +3,7 @@
 package FirstScreen
 
 
+import FirstScreen.ProductModel
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -39,6 +41,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,15 +60,16 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.descriptors.PrimitiveKind
 
 
-//Tela principal
+//Tela principal -> interface com Jetpack Compose
 @Composable
 fun TesteApp(){
-    val httpClient = remember { AppHttpClient.httpClient }
-    var selectedCategory by remember { mutableStateOf("") }// Estado local para a categoria selecionada
-    var products by remember { mutableStateOf<List<ProductModel>>(arrayListOf()) }
-    var categories by remember { mutableStateOf(emptyList<String>()) }
-    val productController = remember { ProductController(httpClient) }
-    val coroutineScope = rememberCoroutineScope()
+    val httpClient = remember { AppHttpClient.httpClient }//variavel que obtem o httClient de AppHttpClient e guarda ele para ser usado
+    var selectedCategory by remember { mutableStateOf("") }//Variavel onde o estado da categoria selecionada pelo usuario começa vazio.
+    var produtoPesquisado = remember { mutableStateOf("") }//
+    var products by remember { mutableStateOf<List<ProductModel>>(arrayListOf()) }// variável onde estado da lista de produtos que será mostrada na tela
+    var categories by remember { mutableStateOf(emptyList<String>()) } // lista de produtos que será mostrada na tela
+    val productController = remember { ProductController(httpClient) } ////variável onde cria o controlador responsável por buscar os produtos.
+    val coroutineScope = rememberCoroutineScope() // variável onde cria um escopo de corrotina, ou seja, onde você pode rodar código assíncrono
 
 
     //carrega os dados ao iniciar
@@ -94,18 +98,18 @@ fun TesteApp(){
             Column(
                 modifier = Modifier
                     .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
+                   .verticalScroll(rememberScrollState())
 
             ) {
                 GreetingSection(name = "Money")
-                SearchBar() //barra de pesquisa
+                SearchBar(products, produtoPesquisado) //barra de pesquisa
                 if (categories.isNotEmpty()){
                     CategorySection( //Categoria atualmente selecionada
                         categories = categories,
                         selectedCategory = selectedCategory,
                         onCategorySelected = { selectedCategory = it } //Atualiza o estado da categoria ao clicar em uma opção
                     )
-                    RecommendedSection(products, selectedCategory)
+                    RecommendedSection(products, selectedCategory, produtoPesquisado)
                 }
 //                    SEÇÃO DE RECOMENDADOS
 
@@ -181,14 +185,15 @@ fun GreetingSection(name: String) {
 
 //Barra de pesquisa
 @Composable
-fun SearchBar() {
-    var searchText by remember { mutableStateOf("") } //Armazena o texto digitado pelo usuário
-
+fun SearchBar(products: List<ProductModel>, produtoPesquisado : MutableState<String>) {
     //Campo de entrada com borda
     OutlinedTextField(
-        value = searchText,
-        onValueChange = {searchText = it},
+        value = produtoPesquisado.value,
+        onValueChange = {
+            produtoPesquisado.value = it
+        },
         placeholder =  {Text("Pesquisar", color = CORES.COLOR.GREENLIGHT )}, // Cor do placeholder  //textColor = Color.White
+        singleLine = true, //uma unica linha
         modifier = Modifier
             .fillMaxWidth() //faz a função que pode ser composta preencher a largura máxima atribuída a ela pelo elemento pai
             .padding(horizontal = 10.dp),
@@ -208,6 +213,7 @@ fun SearchBar() {
                 tint = Color.Green// Cor do ícone
             )} //icone de lupa ao lado direito
     )
+
 }
 
 ////Seção de categorias
@@ -256,11 +262,18 @@ fun CategorySection(
 
 // Seção de Frutas Recomendadas
 @Composable
-fun RecommendedSection(product: List<ProductModel>, selectedCategory : String) {
-    var produtosFiltrados : List<ProductModel> = product.filter {
-        it.category == selectedCategory
+fun RecommendedSection(product: List<ProductModel>, selectedCategory : String, produtoPesquisado : MutableState<String>) {
+    var produtosFiltrados : List<ProductModel>
+    if(produtoPesquisado.value.isNotEmpty()){
+        produtosFiltrados = product.filter {
+            it.title.uppercase().contains(produtoPesquisado.value.uppercase())
+        }
+    }else{
+        produtosFiltrados = product.filter {
+            it.category == selectedCategory
+        }
     }
-    println("produtosFiltrados : $produtosFiltrados")
+
     Column(modifier = Modifier
         .padding(horizontal = 16.dp, vertical = 20.dp)
         .fillMaxWidth()
@@ -307,9 +320,7 @@ fun RecommendedSection(product: List<ProductModel>, selectedCategory : String) {
 
 }
 
-//private fun LazyGridScope.items(function: LazyGridItemScope.(Int) -> Unit) {
-//    val todo = TODO("Not yet implemented")
-//}
+
 
 //card de frutas
 @Composable
@@ -336,6 +347,7 @@ fun ProductCard(product: ProductModel) {
                 "Em estoque: ${product.stock}",
                 color = CORES.COLOR.DARKGREEN
             ) // Cor original
+
             Text(
                 "R$${(product.price)}",
                 style = MaterialTheme.typography.body2,

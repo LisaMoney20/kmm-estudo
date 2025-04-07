@@ -7,59 +7,28 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
-
+//ProductController: responsável por buscar os dados da API e processar os dados
+//Classe ProductController ela recebe como parametro o HttpClient e herda (:) de AppHttpClient todas as funcionabilidades dessa classe
 class ProductController(httpClient1: HttpClient) : AppHttpClient() {
-    private val httpClient = HttpClient {
-        install(ContentNegotiation) {
+    private val httpClient = HttpClient {//uma nova variavel instaciada no HttpClient privada, ou seja, faz com que a variavel só seja acessada dentro da própria classe ProductController
+        install(ContentNegotiation) {//plugin de negociação de contaudo, informando que ser trabalhado comJ SON
             json(Json {
-                ignoreUnknownKeys = true
+                ignoreUnknownKeys = true //faz com que o campo seja ignorado caso não esteja presente no data class
             })
         }
     }
-
+//O suspend fun faz com que a função seja pausada e retorna o ProductModel
     suspend fun fetchProducts(): List<ProductModel> {
-        val response: ProductsResponse = httpClient
-            .get("https://dummyjson.com/products")
+        val response: ProductsResponse = httpClient //o HTTP do tipo GET vai da URL e o servidor responde com dados
+            .get("https://dummyjson.com/products")//Requisição usada para buscar informaçōes
             .body()
         println("carrro${response.products}")
-        return response.products
+        return response.products //retorna a lista de produtos dentro do response
     }
-
+//categoria getCategories onde se recebe a lista de produtos e retorna uma lista de categorias unicas
     fun getCategories(products: List<ProductModel>): List<String> {
-        return products.map { it.category }.distinct()
-    }
+        return products.map { it.category }.distinct() //.map:cada item da lista de produtos extrai só um campo e category e o resultado vira uma lista de categorias
+
+}
 }
 
-//    // função assíncrona, porque a requisição HTTP pode demorar
-//    suspend fun fetchProducts(): List<ProductModel>{
-//        try {
-//            val response = httpClient
-//                .get("https://dummyjson.com/products") // requisição GET para a API de produtososta para um objeto da classe
-//            var corpo : ProductsResponse = response.body<ProductsResponse>()
-//            println("CARRO AUTOMATICO: $corpo")
-//            return arrayListOf()
-//        }catch (e: Exception){
-//            println("Exception: $e")
-//            return arrayListOf()
-//        }
-//
-////        return response.products.map{ // Percorre todos os produtos retornados
-////            ProductModel( //apenas com os dados necessários
-////                id = it.id,
-////                title = it.title,
-////                price = it.price,
-////                stock = it.stock,
-////                category = it.category,
-////                thumbnail = it.thumbnail,
-////                images = it.images
-////            )
-////        }
-//        return arrayListOf()
-//    }
-//
-//    fun getCategories(products: List<ProductModel>): // A função recebe uma lista de produtos (products).
-//            List<String>{ //Retorna uma lista de strings, representando as categorias únicas dos produtos
-//        return products.map{ it.category}.distinct() //Extrai a categoria de cada produto sem as duplicatas
-//    }
-//}
-//
